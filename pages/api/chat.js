@@ -1,0 +1,112 @@
+import OpenAI from "openai";
+import chatConfig from "../../config/chatConfig";
+import { getProducts } from "../../utils/functions";
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ error: "Only POST allowed" });
+  }
+
+  const { messages } = req.body;
+  if (!Array.isArray(messages)) {
+    return res.status(400).json({ error: "'messages' should be an array" });
+  }
+
+  const convo = [
+    { role: "system", content: chatConfig.ai.systemPrompt },
+    ...messages
+  ];
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: chatConfig.ai.model,
+      messages: convo,
+      functions: chatConfig.ai.functions,
+      function_call: "auto"
+    });
+
+    const message = response.choices[0].message;
+
+    if (!message.function_call) {
+      const trimmed = (message.content || "").trim();
+      const isFakeJson = trimmed.startsWith("[") && trimmed.endsWith("]");
+
+      if (isFakeJson) {
+        console.warn("⚠️ HALUCINARE: modelul a generat JSON fără function_call!");
+
+        return res.status(200).json({
+          message: {
+            role: "assistant",
+            content: "Îmi pare rău, nu am găsit produse relevante."
+          },
+          isProducts: false
+        });
+      }
+    }
+
+    if (message.function_call?.name === "getProducts") {
+      const args = JSON.parse(message.function_call.arguments);
+      const products = await getProducts(args);
+
+      if (products.length === 0) {
+        return res.status(200).json({
+          message: {
+            role: "assistant",
+            content: "Nu am găsit acest produs."
+          },
+          isProducts: true
+        });
+      }
+
+      return res.status(200).json({
+        message: {
+          role: "assistant",
+          content: JSON.stringify(products)
+        },
+        isProducts: true
+      });
+    }
+
+    // --- MODIFICARE: Link-uire automată a produselor și conversie linkuri Markdown în HTML ---
+    let rawText = (message.content || "").trim();
+
+    // Încarcă toate produsele (sau un cache, cum preferi)
+    const allProducts = await getProducts({ query: "" }); // toate produsele
+
+    // Sortează produsele după lungime descrescătoare (pentru a evita link-uri parțiale în denumiri)
+    allProducts.sort((a, b) => b.name.length - a.name.length);
+
+    // Înlocuiește orice apariție exactă (case-insensitive) a numelui unui produs cu link
+    for (const product of allProducts) {
+      // Escape pentru regex
+      const escapedName = product.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const reg = new RegExp(`\\b${escapedName}\\b`, "gi"); // word boundary, insensibil la caz
+
+      rawText = rawText.replace(reg, `<a href="${product.permalink}" target="_blank">${product.name}</a>`);
+    }
+
+    // --- Convertim orice link Markdown în HTML ---
+    // Exemplu: [linkul acesta](https://...) => <a href="https://...">linkul acesta</a>
+    rawText = rawText.replace(
+      /\[([^\]]+)\]\((https?:\/\/[^\)\s]+)\)/g,
+      '<a href="$2" target="_blank">$1</a>'
+    );
+    // --- END MODIFICARE ---
+
+    return res.status(200).json({
+      message: {
+        role: "assistant",
+        content: rawText
+      },
+      isProducts: false
+    });
+  } catch (err) {
+    console.error("OpenAI API error:", err);
+    return res
+      .status(err.status || 500)
+      .json({ error: err.message || "OpenAI error" });
+  }
+}
