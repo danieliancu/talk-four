@@ -47,6 +47,7 @@ export default async function handler(req, res) {
       }
     }
 
+    // --- NOU: Explicație conversațională când returnezi produse ---
     if (message.function_call?.name === "getProducts") {
       const args = JSON.parse(message.function_call.arguments);
       const products = await getProducts(args);
@@ -61,16 +62,41 @@ export default async function handler(req, res) {
         });
       }
 
+      // -- Prompt explanation --
+      const userQuery = args.query || req.body.messages?.[req.body.messages.length-1]?.content || "";
+      const productsShort = products.slice(0, 5);
+
+      const productsList = productsShort
+        .map((p, i) => `${i+1}. ${p.name}${p.description ? ' - ' + p.description : ''}`)
+        .join('\n');
+
+      const explanationPrompt = chatConfig.ai.explanationPrompt
+        .replace("{query}", userQuery)
+        .replace("{products}", productsList);
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "You are a helpful shopping assistant." },
+          { role: "user", content: explanationPrompt }
+        ],
+        max_tokens: 120,
+        temperature: 0.8,
+      });
+
+      const explanation = completion.choices[0].message.content.trim();
+
       return res.status(200).json({
         message: {
           role: "assistant",
           content: JSON.stringify(products)
         },
-        isProducts: true
+        isProducts: true,
+        explanation // <-- nou, pentru frontend
       });
     }
 
-    // --- MODIFICARE: Link-uire automată a produselor și conversie linkuri Markdown în HTML ---
+    // --- Link-uire automată a produselor și conversie linkuri Markdown în HTML ---
     let rawText = (message.content || "").trim();
 
     // Încarcă toate produsele (sau un cache, cum preferi)
@@ -81,15 +107,12 @@ export default async function handler(req, res) {
 
     // Înlocuiește orice apariție exactă (case-insensitive) a numelui unui produs cu link
     for (const product of allProducts) {
-      // Escape pentru regex
       const escapedName = product.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const reg = new RegExp(`\\b${escapedName}\\b`, "gi"); // word boundary, insensibil la caz
-
+      const reg = new RegExp(`\\b${escapedName}\\b`, "gi");
       rawText = rawText.replace(reg, `<a href="${product.permalink}" target="_blank">${product.name}</a>`);
     }
 
     // --- Convertim orice link Markdown în HTML ---
-    // Exemplu: [linkul acesta](https://...) => <a href="https://...">linkul acesta</a>
     rawText = rawText.replace(
       /\[([^\]]+)\]\((https?:\/\/[^\)\s]+)\)/g,
       '<a href="$2" target="_blank">$1</a>'

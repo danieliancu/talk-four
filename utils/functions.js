@@ -115,10 +115,13 @@ export async function getProducts({ query }) {
 
   // 5. Fallback fuzzy: sinonime + substring pentru orice termen
   const SIMILAR_WORDS = {
-    'menstruatie': ['menstruala', 'menstruale', 'menstruație', 'menstruații', 'menstruală', 'menstrual', 'menstruatiei', 'menstruaţiei'],
-    'brun': ['bruna', 'brune', 'bruni'],
+      'menstruatie': ['menstruala', 'menstruale', 'menstruație', 'menstruații', 'menstruală', 'menstrual', 'menstruatiei', 'menstruaţiei'],
+      'brun': ['bruna', 'brune', 'bruni'],
       'germinare': ['germinat', 'germeni', 'germina', 'germinați'],
       'germinat': ['germinare', 'germeni', 'germina', 'germinați'],
+      'suc': ['sucuri', 'bauturi racoritoare', 'sucuri', 'sucurile'],
+      'confiat': ['confiate', 'confiată', 'confiati', 'confiata'],
+      'confiate': ['confiat', 'confiată', 'confiati','confiata'],      
     // Adaugă aici sinonime pentru orice alt cuvânt-cheie relevant
   };
 

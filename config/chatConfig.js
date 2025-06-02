@@ -7,6 +7,14 @@ const chatConfig = {
     model: "gpt-3.5-turbo", // OpenAI model name
     systemPrompt: "You are a strict product assistant. For ANY user message that mentions a product, a brand, or a category, you MUST use the function getProducts. DO NOT reply with product lists yourself. You are not allowed to make assumptions or generate JSON unless returned by getProducts. Your only job is to call getProducts and return the raw array it provides. Always answer in Romanian.",
 
+    // Prompt pentru explicație conversațională (adăugat)
+    explanationPrompt: `
+      User asked for: "{query}"
+      Products found:
+      {products}
+      Write a very short explanation (no more than 2 sentences), friendly explanation for the user, relating these products to their query. Mention why these products match the user's request, and if they are alternatives, explain that too. DO NOT repeat the product list, only explanation! If user used Romanian, reply in Romanian.
+      `.trim(),
+
     // Keyword extraction AI settings (pentru procesare avansată a query-ului)
     keywordExtraction: {
       enabled: true, // setează pe true dacă vrei să folosești AI extraction la fiecare query
@@ -36,7 +44,7 @@ const chatConfig = {
   // UI language and styling settings
   ui: {
     language: "ro",
-    appTitle: "Chat Assistant OpenAI",      // Title shown at top
+    appTitle: "Natmag.ro Asistent | Prietenul tău",      // Title shown at top
     inputPlaceholder: "Caută produse...",   // Placeholder în câmpul de input
     sendButtonText: "Caută",                // Text pe butonul de trimitere
     labels: {
@@ -47,21 +55,21 @@ const chatConfig = {
     // Product card template and styles
     productCard: {
       template: `
-<div style="{{containerStyle}}">
-  <div style="{{leftStyle}}">
-    <img src="{{image}}" style="{{imgStyle}}">
-  </div>
-  <div style="{{rightStyle}}">
-    <strong style="{{categoryStyle}}">{{categories}}</strong>
-    <strong style="{{categoryStyle}}">{{brand}}</strong>    
-    <strong style="{{titleStyle}}">{{name}}</strong>
-    <div style="{{descriptionStyle}}">{{description}}</div>
-    <div style="{{footerStyle}}">
-      <span style="{{priceStyle}}">Preț: {{price}} RON</span>
-      <a href="{{permalink}}" target="_blank" style="{{buttonStyle}}">Vezi produsul</a>
-    </div>
-  </div>
-</div>`,
+        <div style="{{containerStyle}}">
+          <div style="{{leftStyle}}">
+            <img src="{{image}}" style="{{imgStyle}}">
+          </div>
+          <div style="{{rightStyle}}">
+            <strong style="{{categoryStyle}}">{{categories}}</strong>
+            <strong style="{{categoryStyle}}">{{brand}}</strong>    
+            <strong style="{{titleStyle}}">{{name}}</strong>
+            <div style="{{descriptionStyle}}">{{description}}</div>
+            <div style="{{footerStyle}}">
+              <span style="{{priceStyle}}">Preț: {{price}} RON</span>
+              <a href="{{permalink}}" target="_blank" style="{{buttonStyle}}">Vezi produsul</a>
+            </div>
+          </div>
+        </div>`,
       styles: {
         containerStyle:   "padding: 20px;margin:15px 0;border-radius:10px;background:#fff;font-size:16px;box-shadow:0 2px 3px lightgrey;display: flex;flex-wrap: nowrap;gap: 20px;height: 200px;color: #333;",
         leftStyle:        "background: #e3f0fc;width: 40%;display: flex;align-items: center;justify-content: center;overflow:hidden;",
