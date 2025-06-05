@@ -91,11 +91,14 @@ export default function ChatBox() {
     // Restul mesajelor (text simple)
     return (
       <div key={idx} className={`message ${m.role}`}>
-        <strong>
-          {m.role === "user" ? labels.user : labels.assistant}:
-        </strong>{" "}
+        {(m.role === "user" ? labels.user : labels.assistant) && (
+          <strong>
+            {m.role === "user" ? labels.user : labels.assistant}:{" "}
+          </strong>
+        )}
         <span dangerouslySetInnerHTML={{ __html: m.content }} />
       </div>
+
     );
   };
 
@@ -106,7 +109,7 @@ export default function ChatBox() {
         {messages.map((m, idx) => renderMessage(m, idx))}
         {isTyping && (
           <div className="message assistant typing-indicator">
-            <strong>{labels.assistant}:</strong>{" "}
+            {labels.assistant && <strong>{labels.assistant}:</strong>}
             <span>
               <span className="typing-dots-3">
                 <span className="dot dot1"></span>

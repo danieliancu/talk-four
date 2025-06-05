@@ -2,9 +2,26 @@
 // Centralize all customizable settings for the chat assistant (exclusiv produse)
 
 const chatConfig = {
+  // API & produs settings (nou bloc!)
+  products: {
+    endpoint: "https://natmag.ro/wp-json/custom/v1/products",  // <-- aici schimbi endpoint-ul!
+    similarWords: {
+      'menstruatie': ['menstruala', 'menstruale', 'menstruație', 'menstruații', 'menstruală', 'menstrual', 'menstruatiei', 'menstruaţiei'],
+      'brun': ['bruna', 'brune', 'bruni'],
+      'germinare': ['germinat', 'germeni', 'germina', 'germinați'],
+      'germinat': ['germinare', 'germeni', 'germina', 'germinați'],
+      'suc': ['sucuri', 'bauturi racoritoare', 'sucuri', 'sucurile'],
+      'confiat': ['confiate', 'confiată', 'confiati', 'confiata'],
+      'confiate': ['confiat', 'confiată', 'confiati','confiata'],
+      // ...continui după nevoie
+    },
+    resultLimit: 5, // <-- aici setezi cate produse sa apara (inclusiv la fuzzy)
+    defaultTimeout: 10000 // pentru fetchWithTimeout
+  },  
   // AI settings
   ai: {
     model: "gpt-3.5-turbo", // OpenAI model name
+    explanationModel: "gpt-4o", // <-- ADĂUGAT
     systemPrompt: "You are a strict product assistant. For ANY user message that mentions a product, a brand, or a category, you MUST use the function getProducts. DO NOT reply with product lists yourself. You are not allowed to make assumptions or generate JSON unless returned by getProducts. Your only job is to call getProducts and return the raw array it provides. Always answer in Romanian.",
 
     // Prompt pentru explicație conversațională (adăugat)
@@ -14,6 +31,13 @@ const chatConfig = {
       {products}
       Write a very short explanation (no more than 2 sentences), friendly explanation for the user, relating these products to their query. Mention why these products match the user's request, and if they are alternatives, explain that too. DO NOT repeat the product list, only explanation! If user used Romanian, reply in Romanian.
       `.trim(),
+
+      // --- Nou: setări pentru explicație ---
+    explanation: {
+      systemMessage: "You are a helpful shopping assistant.", // <-- aici!
+      maxTokens: 120, // <-- aici!
+      temperature: 0.8 // <-- aici!
+    },    
 
     // Keyword extraction AI settings (pentru procesare avansată a query-ului)
     keywordExtraction: {
@@ -48,8 +72,13 @@ const chatConfig = {
     inputPlaceholder: "Caută produse...",   // Placeholder în câmpul de input
     sendButtonText: "Caută",                // Text pe butonul de trimitere
     labels: {
-      user: "Tu",
-      assistant: "Asistent"
+      user: "",
+      assistant: "",
+    },
+
+     messages: {
+      notFound: "Îmi pare rău, nu am găsit produse relevante.",
+      notFoundSingle: "Nu am găsit acest produs."
     },
 
     // Product card template and styles

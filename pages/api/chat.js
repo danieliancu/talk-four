@@ -40,7 +40,7 @@ export default async function handler(req, res) {
         return res.status(200).json({
           message: {
             role: "assistant",
-            content: "Îmi pare rău, nu am găsit produse relevante."
+            content: chatConfig.ui.messages.notFound
           },
           isProducts: false
         });
@@ -56,7 +56,7 @@ export default async function handler(req, res) {
         return res.status(200).json({
           message: {
             role: "assistant",
-            content: "Nu am găsit acest produs."
+            content: chatConfig.ui.messages.notFoundSingle
           },
           isProducts: true
         });
@@ -74,15 +74,16 @@ export default async function handler(req, res) {
         .replace("{query}", userQuery)
         .replace("{products}", productsList);
 
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: "You are a helpful shopping assistant." },
-          { role: "user", content: explanationPrompt }
-        ],
-        max_tokens: 120,
-        temperature: 0.8,
-      });
+const completion = await openai.chat.completions.create({
+  model: chatConfig.ai.explanationModel,
+  messages: [
+    { role: "system", content: chatConfig.ai.explanation.systemMessage },
+    { role: "user", content: explanationPrompt }
+  ],
+  max_tokens: chatConfig.ai.explanation.maxTokens,
+  temperature: chatConfig.ai.explanation.temperature,
+});
+
 
       const explanation = completion.choices[0].message.content.trim();
 
@@ -118,6 +119,18 @@ export default async function handler(req, res) {
       '<a href="$2" target="_blank">$1</a>'
     );
     // --- END MODIFICARE ---
+
+
+    if (!rawText) {
+      return res.status(200).json({
+        message: {
+          role: "assistant",
+          content: chatConfig.ui.messages.notFound
+        },
+        isProducts: false
+      });
+    }
+
 
     return res.status(200).json({
       message: {
